@@ -1,7 +1,7 @@
 # iRE_helper
 Blender extension for helping the MC /CSD team in working within iRE.
 the export presets are temp awaiting approval from somone.
-does not work with animated assets 
+does not work with animated assets, A non trivial portion of this code is stolen from the EE team that made some of these plug ins already just updating to work with blender 4.2 and be more artist friendly 
 
 Potential Roadmap 
 
