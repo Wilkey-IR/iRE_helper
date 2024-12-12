@@ -1,6 +1,6 @@
 # iRE_helper
-Blender extension for helping the MC /CSD team in working within iRE
-the export presets are temp awaiting approval from somone   
+Blender extension for helping the MC /CSD team in working within iRE.
+the export presets are temp awaiting approval from somone.
 does not work with animated assets 
 
 Potential Roadmap 
