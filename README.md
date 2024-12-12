@@ -13,6 +13,9 @@ Export Assets with multiple Animation
 
 Exporting Multiple assests as single assest  GLB files for use in populating a Library of props 
 
+having the Add on update in blender via this git 
+
+
 Im open to Suggestion from the team 
 
 
