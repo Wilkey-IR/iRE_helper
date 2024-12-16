@@ -6,6 +6,9 @@ does not work with animated assets, A non trivial portion of this code is stolen
 Potential Roadmap 
 
 
+exporter button having a chek mark for including animations in exported files 
+
+ exporter button having a check box for all assests vs selected 
 
 Export single Prop animations 
 
