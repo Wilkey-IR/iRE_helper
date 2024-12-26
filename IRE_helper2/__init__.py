@@ -8,6 +8,26 @@ import numpy as np # type: ignore
 
 
 
+
+# Global Properties
+class IREAddonGlobalProperties(bpy.types.PropertyGroup):
+    export_animations: bpy.props.BoolProperty(
+        name="Export Animations",
+        description="Enable animations during GLTF export",
+        default=False
+    )
+    export_scene: bpy.props.BoolProperty(
+        name="Export Entire Scene",
+        description="Export the entire scene instead of only selected objects",
+        default=False
+    )
+
+
+  
+ # make selected meshes "mesh" colliders    
+
+
+# make mesh a collider 
 class OBJECT_OT_parent_to_empty_with_properties(bpy.types.Operator):
     #main button that  triggers everything below 
     bl_idname = "object.parent_to_empty_with_properties"
@@ -15,6 +35,7 @@ class OBJECT_OT_parent_to_empty_with_properties(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'}
     
      # Set custom properties for the empty object they throw up an error in IDE buts its cool 
+     # may need to be updated as as iRE is updated 
     empty_prop1: bpy.props.StringProperty(name="EE Rigidbody Type", default="fixed") # type: ignore
     empty_prop2: bpy.props.StringProperty(name="Entity", default="base") # type: ignore
     # Set custom properties for the child objects
@@ -32,9 +53,8 @@ class OBJECT_OT_parent_to_empty_with_properties(bpy.types.Operator):
             self.report({'WARNING'}, "Select meshes only, silly goose!ʕっ•ᴥ•ʔっ")
             return {'CANCELLED'}
         
-        # Create a new collection for colliders 
-       # collider_collection = bpy.data.collections.new("colliders")
-        #context.scene.collection.children.link(collider_collection)  
+ 
+       
         # Ensure a "colliders collection exists  
         if "colliders" not in bpy.data.collections:
             colliders_collection = bpy.data.collections.new("colliders")
@@ -63,12 +83,6 @@ class OBJECT_OT_parent_to_empty_with_properties(bpy.types.Operator):
                      
         # Create an empty object at world orgin per the requirment in iRE
         
-        #empty = bpy.data.objects.new("base", None)
-        #context.collection.objects.link(empty)
-          # Set custom properties for the empty subject to change from iRE team 
-        #empty["xrengine.EE_rigidbody.type"] = self.empty_prop1
-        #empty["xrengine.entity"] = self.empty_prop2
-        
         
         for obj in selected_objects:
             # loops through all selected objects 
@@ -80,16 +94,16 @@ class OBJECT_OT_parent_to_empty_with_properties(bpy.types.Operator):
             # adds "Collider" in each objects name
             obj.name = f"{obj.name}-Collider"
             #colliders_collection.objects.link(obj)
-           # context.collection.objects.unlink(obj)
+            #context.collection.objects.unlink(obj)
+            
+            # makes the mesh a wire type for visual pleasure 
             obj.display_type = 'WIRE'
 
                 
-        # Move the empty object to the colliders collection
-        #colliders_collection.objects.link(base_empty)
-        #context.collection.objects.unlink(base_empty)
+       
                 
         #add the empty as an active object to make exporting easier  
-        self.report({'INFO'}, "Ready for export ╭( ･ㅂ･)و") 
+        self.report({'INFO'}, "Ready for export ╭( ･ㅂ･)وWhoooo") 
         context.view_layer.objects.active = base_empty
         base_empty.select_set(True)    
        
@@ -99,63 +113,73 @@ class OBJECT_OT_parent_to_empty_with_properties(bpy.types.Operator):
         
         return {'FINISHED'}
 
-class OBJECT_ire_combatable_gltf_export(bpy.types.Operator):   
- 
-    
-    #button to export as a GLTF made need updated for Mats and the like 
+
+
+#  GLTF Export
+class OBJECT_ire_combatable_gltf_export(bpy.types.Operator):
     bl_idname = "object.ire_combatable_gltf_export"
-    bl_label = "IRE Compatable GLTF export"
+    bl_label = "IRE Compatible GLTF Export"
     bl_options = {'REGISTER', 'UNDO'}
 
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH") # type: ignore
-    
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")  # type: ignore
+
     def execute(self, context):
-        print("export")
-        bpy.ops.object.select_all(action='SELECT')
-        self.report({'INFO'}, f"Selected everything")
+        print("Exporting...")
+        self.report({'INFO'}, "Exporting ")
+        props = context.scene.ire_addon_global_props
+        export_animations = props.export_animations
+        export_scene = props.export_scene
 
-        #FIRST check to see if we are Selecting objecrts 
-        if not context.selectable_objects:
-            self.report({'WARNING'},"Please Select Objects for Export")
-            return{'CANCELLED'}
-                # Create a new collection for colliders
-        collider_collection = bpy.data.collections.new("colliders")
-        context.scene.collection.children.link(collider_collection)    
-        if "colliders" not in bpy.data.collections:
-            colliders_collection = bpy.data.collections.new("colliders")
-            context.scene.collection.children.link(colliders_collection)
+        # Determine selection behavior based on export_scene
+        if export_scene:
+            bpy.ops.object.select_all(action='SELECT')  # Select all objects
+            self.report({'INFO'}, "Exporting entire scene")
         else:
-            colliders_collection = bpy.data.collections["colliders"]  
-        
-        # the actual Exporter LIKELY TO REQUIRE UPDATE    
-        bpy.ops.export_scene.gltf (
-            filepath=self.filepath,
-                    export_format='GLB',
-                    export_texture_dir="textures", 
-                    check_existing=False, 
-                    export_texcoords=True,
-                    export_normals=True,
-                    export_apply=True,
-                    export_materials='EXPORT',
-                    use_selection=True,
-                    export_animations=False,
-                    export_skins=False,
-                    export_morph=False,
-                    export_extras=True,
-        )
-        
-                    #add other export Varibales here https://docs.blender.org/api/current/bpy.ops.export_scene.html
-                        
-            
-        self.report({'INFO'}, f"Exported to {self.filepath}")
-    
+            #bpy.ops.object.select_all(action='DESELECT')  # Deselect all
+            #for obj in context.selected_objects:
+            #    obj.select_set(True)
+            self.report({'INFO'}, "Exporting selected objects only")
 
+        # Check if there are any selectable objects
+        if not context.selectable_objects:
+            self.report({'WARNING'}, "No objects to export")
+            return {'CANCELLED'}
+
+        # Create or link to colliders collection
+        if "colliders" not in bpy.data.collections:
+            collider_collection = bpy.data.collections.new("colliders")
+            context.scene.collection.children.link(collider_collection)
+        else:
+            collider_collection = bpy.data.collections["colliders"]
+
+        print(f"Export Animations: {export_animations}, Export Scene: {export_scene}")
+
+        # Export as GLTF
+        bpy.ops.export_scene.gltf(
+            filepath=self.filepath,
+            export_format='GLB',
+            export_texture_dir="textures",
+            check_existing=False,
+            export_texcoords=True,
+            export_normals=True,
+            export_apply=True,
+            export_materials='EXPORT',
+            use_selection=True,  
+            export_animations=export_animations,
+            export_skins=False,
+            export_morph=False,
+            export_extras=True,
+                  #add other export Varibales here https://docs.blender.org/api/current/bpy.ops.export_scene.html
+        )
+
+        self.report({'INFO'}, f"Exported to {self.filepath}")
         return {'FINISHED'}
-    
+
     def invoke(self, context, event):
-         # Open file browser to choose location 
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
+
+# create Object bounding box
 
 class OBJECT_OT_create_OBB(bpy.types.Operator):
     # button that  triggers everything below 
@@ -177,8 +201,7 @@ class OBJECT_OT_create_OBB(bpy.types.Operator):
         if any(obj.type != 'MESH' for obj in selected_objects):
             self.report({'WARNING'}, "Select meshes only, silly goose!ʕっ•ᴥ•ʔっ")
             return {'CANCELLED'}
-       # collider_collection = bpy.data.collections.new("colliders")
-        #context.scene.collection.children.link(collider_collection)    
+    
         
         if "colliders" not in bpy.data.collections:
             colliders_collection = bpy.data.collections.new("colliders")
@@ -203,15 +226,7 @@ class OBJECT_OT_create_OBB(bpy.types.Operator):
             colliders_collection.objects.link(base_empty)
             context.scene.collection.objects.unlink(base_empty)
 
-        #main logic 
-                # Create a new collection for colliders
-       # collider_collection = bpy.data.collections.new("colliders")
-        #context.scene.collection.children.link(collider_collection)    
-        #if "colliders" not in bpy.data.collections:
-          #  colliders_collection = bpy.data.collections.new("colliders")
-           # context.scene.collection.children.link(colliders_collection)
-        #else:
-          #  colliders_collection = bpy.data.collections["colliders"]  
+     
 
         for obj in bpy.context.selected_objects:
             # Parent to the "base" empty
@@ -250,6 +265,7 @@ class OBJECT_OT_create_OBB(bpy.types.Operator):
                 bpy.ops.mesh.primitive_cube_add(location=center_world)
                 bounding_box = bpy.context.object
                 bounding_box.name = 'PCA_OBB'
+                   # makes the mesh a wire type for visual pleasure 
                 bounding_box.display_type = 'WIRE'
 
                 # Scale the box to match our min and max bounds, corrected to handle type properly
@@ -274,7 +290,7 @@ class OBJECT_OT_create_OBB(bpy.types.Operator):
                 obb_name = f"{obj.name}_Box"
                 bounding_box.name = obb_name  # Name the OBB
                 
-                # Set custom properties
+                # Set custom properties SUBJECT TO CHANGE
                 bounding_box["xrengine.entity"] = obb_name
                 bounding_box["xrengine.EE_collider.shape"] = "box"
                 bounding_box.parent = base_empty
@@ -282,7 +298,7 @@ class OBJECT_OT_create_OBB(bpy.types.Operator):
 
                 colliders_collection.objects.link(bounding_box)
                 context.collection.objects.unlink(bounding_box)
-                
+                # some olde code from the Mysertery EE person who made this 
                 #if obj.parent:
                     #   bounding_box.parent = obj.parent
                     # To keep the world transform, first apply the current transformation
@@ -307,17 +323,21 @@ class OBJECT_OT_create_OBB(bpy.types.Operator):
                             #    coll.objects.unlink(bounding_box)
 
 
-                print("The OBB is grooving with your mesh, all aligned and smooth!")
+                self.report({'INFO'}, "The OBB is grooving with your mesh, all aligned and smooth!")
             else:
-                print("Hey now, you need to select a mesh to find its rhythm!")
+                self.report({'WARNING'},("Hey now, you need to select a mesh to find its rhythm!"))
     
                 
        
         return {'FINISHED'}
           
-# selected assest export button 
 
-#
+
+
+
+
+
+#panel window 
 
 class VIEW3D_PT_custom_properties_panel(bpy.types.Panel):
     #panel layout
@@ -329,19 +349,27 @@ class VIEW3D_PT_custom_properties_panel(bpy.types.Panel):
     
     def draw(self, context):
         
-        #panel layout butons 
+        #panel layout butons and silly little art at the bottom 
         
         
         layout = self.layout
+        props = context.scene.ire_addon_global_props
         layout.label(text="IRE Helper", icon='OUTLINER_DATA_META')
         #first button 
         layout.operator("object.create_obb", icon='EVENT_B')
         layout.operator("object.parent_to_empty_with_properties",icon= 'EVENT_C')
         
         layout.operator("object.ire_combatable_gltf_export", icon='EVENT_E')
-
+        #placement for the checkbox
         
-        ascii_art = [   r"""(づ｡◕‿‿◕｡)づ
+        # Add checkbox for animation export
+        layout.prop(props, "export_animations", text="Export Animations")
+        layout.prop(props, "export_scene", text="Export scene")
+
+        # Add button for GLTF export
+        #layout.operator("object.ire_combatable_gltf_export", text="Export GLTF")
+        
+        ascii_art = [   r"""(づ｡◕‿‿◕｡) づ
                   
                     
                             """  ]
@@ -353,22 +381,35 @@ class VIEW3D_PT_custom_properties_panel(bpy.types.Panel):
         for line in ascii_art:
             layout.label(text=line)
         
-# stuff needed for the Add-on 
+# Register and un register classes  
+classes = (
+    IREAddonGlobalProperties,
+    OBJECT_OT_create_OBB,
+    OBJECT_OT_parent_to_empty_with_properties,
+    OBJECT_ire_combatable_gltf_export,
+    VIEW3D_PT_custom_properties_panel,
+)
 
 def register():
-    bpy.utils.register_class(OBJECT_OT_create_OBB)
     
-    bpy.utils.register_class(OBJECT_OT_parent_to_empty_with_properties)
+    #bpy.utils.register_class(OBJECT_OT_create_OBB)
+    
+    #bpy.utils.register_class(OBJECT_OT_parent_to_empty_with_properties)
 
-    bpy.utils.register_class(OBJECT_ire_combatable_gltf_export)
-    bpy.utils.register_class(VIEW3D_PT_custom_properties_panel)
-
+    #bpy.utils.register_class(OBJECT_ire_combatable_gltf_export)
+    #bpy.utils.register_class(VIEW3D_PT_custom_properties_panel)
+    for cls in classes:
+        bpy.utils.register_class(cls)
+    
    
 
 def unregister():
-    bpy.utils.unregister_class(OBJECT_OT_create_OBB)
-    bpy.utils.unregister_class(OBJECT_OT_parent_to_empty_with_properties)
-    bpy.utils.unregister_class(OBJECT_ire_combatable_gltf_export)
-    bpy.utils.unregister_class(VIEW3D_PT_custom_properties_panel)   
+   # bpy.utils.unregister_class(OBJECT_OT_create_OBB)
+    #bpy.utils.unregister_class(OBJECT_OT_parent_to_empty_with_properties)
+    #bpy.utils.unregister_class(OBJECT_ire_combatable_gltf_export)
+    #bpy.utils.unregister_class(VIEW3D_PT_custom_properties_panel)  
+    for cls in reversed(classes):
+        bpy.utils.unregister_class(cls)
+    
 if __name__ == "__main__":
     register()

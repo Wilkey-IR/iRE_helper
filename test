@@ -1,0 +1,121 @@
+import bpy
+
+# Global Properties
+class IREAddonGlobalProperties(bpy.types.PropertyGroup):
+    export_animations: bpy.props.BoolProperty(
+        name="Export Animations",
+        description="Enable animations during GLTF export",
+        default=False
+    )
+    export_scene: bpy.props.BoolProperty(
+        name="Export Entire Scene",
+        description="Export the entire scene instead of only selected objects",
+        default=False
+    )
+
+
+# Operator for GLTF Export
+class OBJECT_ire_combatable_gltf_export(bpy.types.Operator):
+    bl_idname = "object.ire_combatable_gltf_export"
+    bl_label = "IRE Compatible GLTF Export"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")  # type: ignore
+
+    def execute(self, context):
+        print("Exporting...")
+        props = context.scene.ire_addon_global_props
+        export_animations = props.export_animations
+        export_scene = props.export_scene
+
+        # Determine selection behavior based on export_scene
+        if export_scene:
+            bpy.ops.object.select_all(action='SELECT')  # Select all objects
+            self.report({'INFO'}, "Exporting entire scene")
+        else:
+            #bpy.ops.object.select_all(action='DESELECT')  # Deselect all
+            #for obj in context.selected_objects:
+            #    obj.select_set(True)
+            self.report({'INFO'}, "Exporting selected objects only")
+
+        # Check if there are any selectable objects
+        if not context.selectable_objects:
+            self.report({'WARNING'}, "No objects to export")
+            return {'CANCELLED'}
+
+        # Create or link to colliders collection
+        if "colliders" not in bpy.data.collections:
+            collider_collection = bpy.data.collections.new("colliders")
+            context.scene.collection.children.link(collider_collection)
+        else:
+            collider_collection = bpy.data.collections["colliders"]
+
+        print(f"Export Animations: {export_animations}, Export Scene: {export_scene}")
+
+        # Export as GLTF
+        bpy.ops.export_scene.gltf(
+            filepath=self.filepath,
+            export_format='GLB',
+            export_texture_dir="textures",
+            check_existing=False,
+            export_texcoords=True,
+            export_normals=True,
+            export_apply=True,
+            export_materials='EXPORT',
+            use_selection=True,  
+            export_animations=export_animations,
+            export_skins=False,
+            export_morph=False,
+            export_extras=True,
+        )
+
+        self.report({'INFO'}, f"Exported to {self.filepath}")
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+
+
+# UI Panel to Control Export Settings
+class IREAddonPanel(bpy.types.Panel):
+    bl_label = "IRE Add-on"
+    bl_idname = "VIEW3D_PT_ire_addon"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = 'IRE Add-on'
+
+    def draw(self, context):
+        layout = self.layout
+        props = context.scene.ire_addon_global_props
+
+        # Add checkboxes for export settings
+        layout.prop(props, "export_animations", text="Export Animations")
+        layout.prop(props, "export_scene", text="Export Entire Scene")
+
+        # Add button for GLTF export
+        layout.operator("object.ire_combatable_gltf_export", text="Export GLTF")
+
+
+# Register and Unregister Classes
+classes = (
+    IREAddonGlobalProperties,
+    OBJECT_ire_combatable_gltf_export,
+    IREAddonPanel,
+)
+
+
+def register():
+    for cls in classes:
+        bpy.utils.register_class(cls)
+    bpy.types.Scene.ire_addon_global_props = bpy.props.PointerProperty(type=IREAddonGlobalProperties)
+
+
+def unregister():
+    for cls in reversed(classes):
+        bpy.utils.unregister_class(cls)
+    del bpy.types.Scene.ire_addon_global_props
+
+
+if __name__ == "__main__":
+    register()
