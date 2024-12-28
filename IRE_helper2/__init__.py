@@ -9,29 +9,31 @@ import numpy as np # type: ignore
 
 
 
-# Global Properties
+# Global Properties for the checkboxs 
 class IREAddonGlobalProperties(bpy.types.PropertyGroup):
     export_animations: bpy.props.BoolProperty(
         name="Export Animations",
         description="Enable animations during GLTF export",
         default=False
-    )
+    ) # type: ignore
     export_scene: bpy.props.BoolProperty(
         name="Export Entire Scene",
-        description="Export the entire scene instead of only selected objects",
+        description="Export the entire scene instead of only selected objects when exporting",
         default=False
-    )
+    ) # type: ignore
 
 
   
  # make selected meshes "mesh" colliders    
 
 
-# make mesh a collider 
+# make a mesh a collider 
 class OBJECT_OT_parent_to_empty_with_properties(bpy.types.Operator):
     #main button that  triggers everything below 
     bl_idname = "object.parent_to_empty_with_properties"
-    bl_label = "Make selected meshes colliders"
+    bl_label = "Make selected mesh a collider"
+    bl_description= ("makes the currently selected meshes magically turn into colliders. \n "
+                     "it will appear to you as a wireframe but invisible in iRE")
     bl_options = {'REGISTER', 'UNDO'}
     
      # Set custom properties for the empty object they throw up an error in IDE buts its cool 
@@ -47,10 +49,10 @@ class OBJECT_OT_parent_to_empty_with_properties(bpy.types.Operator):
         selected_objects = context.selected_objects
         # checks for nothing selected if true it stops  could be updated to also trigger for emptyies and stuff we dont want
         if not selected_objects:
-            self.report({'WARNING'}, " select collision meshes silly goose ᕦʕ •`ᴥ•´ʔᕤ")
+            self.report({'WARNING'}, " select collision meshes silly goose ಠ__ಠ")
             return {'CANCELLED'}
         if any(obj.type != 'MESH' for obj in selected_objects):
-            self.report({'WARNING'}, "Select meshes only, silly goose!ʕっ•ᴥ•ʔっ")
+            self.report({'WARNING'}, "Select meshes only, silly goose! ಠ__ಠ")
             return {'CANCELLED'}
         
  
@@ -103,7 +105,7 @@ class OBJECT_OT_parent_to_empty_with_properties(bpy.types.Operator):
        
                 
         #add the empty as an active object to make exporting easier  
-        self.report({'INFO'}, "Ready for export ╭( ･ㅂ･)وWhoooo") 
+        self.report({'INFO'}, "its a collider now ╭( ･ㅂ･)وWhoooo") 
         context.view_layer.objects.active = base_empty
         base_empty.select_set(True)    
        
@@ -120,6 +122,13 @@ class OBJECT_ire_combatable_gltf_export(bpy.types.Operator):
     bl_idname = "object.ire_combatable_gltf_export"
     bl_label = "IRE Compatible GLTF Export"
     bl_options = {'REGISTER', 'UNDO'}
+    bl_description = (
+        "Exports the scene or just the selected objects as a GLTF file compatible with the Ire engine.\n"
+        "this is package all mats and colliders within one file.\n "
+        "does not support lights, media or HDRIs")
+   # @classmethod
+    #def description():
+     #return "Exports the selected objects or entire scene as a GLTF file compatible with the Ire engine."
 
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")  # type: ignore
 
@@ -169,6 +178,12 @@ class OBJECT_ire_combatable_gltf_export(bpy.types.Operator):
             export_skins=False,
             export_morph=False,
             export_extras=True,
+            #object_types={'EMPTY','MESH', 'OTHER'},
+            #bake_anim = True,
+           # bake_anim_use_nla_strips = True,
+            #use_custom_props = True,
+            
+            
                   #add other export Varibales here https://docs.blender.org/api/current/bpy.ops.export_scene.html
         )
 
@@ -184,8 +199,11 @@ class OBJECT_ire_combatable_gltf_export(bpy.types.Operator):
 class OBJECT_OT_create_OBB(bpy.types.Operator):
     # button that  triggers everything below 
     bl_idname = "object.create_obb"
-    bl_label = "simple bouding box"
+    bl_label = "Create a bounding box around a mesh"
     bl_options = {'REGISTER', 'UNDO'}
+    bl_description= ("click this button to make the math wizard fly down and sprinkle some dust on your \n"
+                     "mesh and create a bounding box around that mesh with all the iRE fixinings to make it into a collider \n"
+                     "watch out he's not great all the time! the bounding box will appear in wireframe but will not be visible in iRE")
     empty_prop1: bpy.props.StringProperty(name="EE Rigidbody Type", default="fixed") # type: ignore
     empty_prop2: bpy.props.StringProperty(name="Entity", default="base") # type: ignore
     # most of this is from an EE blender File author unknown but really into music 
@@ -196,7 +214,7 @@ class OBJECT_OT_create_OBB(bpy.types.Operator):
         selected_objects = context.selected_objects
         # check for nothing selected if true it stops  could be updated to also trigger for emptyies and stuff we dont want
         if not selected_objects:
-            self.report({'WARNING'}, " select collision meshes silly goose ᕦʕ •`ᴥ•´ʔᕤ")
+            self.report({'WARNING'}, " select collision meshes silly goose ʕっ•ᴥ•ʔっ")
             return {'CANCELLED'}
         if any(obj.type != 'MESH' for obj in selected_objects):
             self.report({'WARNING'}, "Select meshes only, silly goose!ʕっ•ᴥ•ʔっ")
@@ -357,14 +375,30 @@ class VIEW3D_PT_custom_properties_panel(bpy.types.Panel):
         layout.label(text="IRE Helper", icon='OUTLINER_DATA_META')
         #first button 
         layout.operator("object.create_obb", icon='EVENT_B')
+        
+        
         layout.operator("object.parent_to_empty_with_properties",icon= 'EVENT_C')
+        
+        #single row 
+        row = layout.row()
+        
+        # add two columns 
+        col1 = row.column()
+        col2 = row.column()
+        # Place the checkboxes in the columns
+        col1.prop(props, "export_animations", text="Export Animations")
+        col2.prop(props, "export_scene", text="Export Scene")
+        
+        
+        
+        # Add checkbox for animation export
+       # layout.prop(props, "export_animations", text="Export Animations")
+        #layout.prop(props, "export_scene", text="Export scene")
         
         layout.operator("object.ire_combatable_gltf_export", icon='EVENT_E')
         #placement for the checkbox
         
-        # Add checkbox for animation export
-        layout.prop(props, "export_animations", text="Export Animations")
-        layout.prop(props, "export_scene", text="Export scene")
+
 
         # Add button for GLTF export
         #layout.operator("object.ire_combatable_gltf_export", text="Export GLTF")
@@ -400,6 +434,10 @@ def register():
     #bpy.utils.register_class(VIEW3D_PT_custom_properties_panel)
     for cls in classes:
         bpy.utils.register_class(cls)
+    
+    # after some troubleshooting this lil punk needs to be here too to help set up the     
+    bpy.types.Scene.ire_addon_global_props = bpy.props.PointerProperty(type=IREAddonGlobalProperties)
+
     
    
 
